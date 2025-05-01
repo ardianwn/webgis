@@ -75,12 +75,12 @@ const Header = ({ darkMode, toggleDarkMode }) => {
         <Container maxWidth="lg">
           <Toolbar sx={{ py: 0.5, justifyContent: 'space-between', px: { xs: 0, sm: 0 } }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          {isMobile && (
-            <IconButton
-              edge="start"
-              color="inherit"
-              aria-label="menu"
-              onClick={toggleDrawer(true)}
+              {isMobile && (
+                <IconButton
+                  edge="start"
+                  color="inherit"
+                  aria-label="menu"
+                  onClick={toggleDrawer(true)}
                   sx={{ 
                     mr: 2,
                     transition: 'transform 0.2s',
@@ -88,24 +88,24 @@ const Header = ({ darkMode, toggleDarkMode }) => {
                       transform: 'rotate(180deg)'
                     }
                   }}
-            >
-              <MenuIcon />
-            </IconButton>
-          )}
-          
+                >
+                  <MenuIcon />
+                </IconButton>
+              )}
+              
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-          <Typography 
-            variant="h6" 
-            component={Link} 
-            to="/" 
-            sx={{ 
-              color: 'white', 
-              textDecoration: 'none',
-              fontWeight: 'bold',
-              display: 'flex',
+                <Typography 
+                  variant="h6" 
+                  component={Link} 
+                  to="/" 
+                  sx={{ 
+                    color: 'white', 
+                    textDecoration: 'none',
+                    fontWeight: 'bold',
+                    display: 'flex',
                     alignItems: 'center',
                   }}
                 >
@@ -116,18 +116,18 @@ const Header = ({ darkMode, toggleDarkMode }) => {
                       mr: 1.5,
                       width: 36,
                       height: 36,
-            }}
-          >
+                    }}
+                  >
                     <Map fontSize="small" />
                   </Avatar>
-            WebGIS Indonesia
-          </Typography>
+                  WebGIS Indonesia
+                </Typography>
               </motion.div>
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          {!isMobile && (
-            <Box sx={{ display: 'flex' }}>
+              {!isMobile && (
+                <Box sx={{ display: 'flex' }}>
                   <AnimatePresence>
                     {navItems.map((item, i) => (
                       <motion.div
@@ -138,12 +138,12 @@ const Header = ({ darkMode, toggleDarkMode }) => {
                         transition={{ delay: i * 0.1, duration: 0.3 }}
                         whileHover={{ y: -3 }}
                       >
-                <Button 
-                  component={Link}
-                  to={item.path}
-                  color="inherit"
-                  sx={{ 
-                    mx: 1,
+                        <Button 
+                          component={Link}
+                          to={item.path}
+                          color="inherit"
+                          sx={{ 
+                            mx: 1,
                             position: 'relative',
                             px: 2,
                             '&::after': {
@@ -164,14 +164,14 @@ const Header = ({ darkMode, toggleDarkMode }) => {
                           startIcon={item.icon}
                         >
                           <span style={{ fontWeight: location.pathname === item.path ? 'bold' : 'normal' }}>
-                  {item.name}
+                            {item.name}
                           </span>
-                </Button>
+                        </Button>
                       </motion.div>
-              ))}
+                    ))}
                   </AnimatePresence>
-            </Box>
-          )}
+                </Box>
+              )}
 
               <motion.div
                 whileHover={{ rotate: 180 }}
@@ -188,11 +188,11 @@ const Header = ({ darkMode, toggleDarkMode }) => {
                     }
                   }}
                 >
-            {darkMode ? <LightMode /> : <DarkMode />}
-          </IconButton>
+                  {darkMode ? <LightMode /> : <DarkMode />}
+                </IconButton>
               </motion.div>
             </Box>
-        </Toolbar>
+          </Toolbar>
         </Container>
       </AppBar>
 
@@ -244,11 +244,11 @@ const Header = ({ darkMode, toggleDarkMode }) => {
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: i * 0.1 }}
               >
-              <ListItem 
-                button 
-                component={Link} 
-                to={item.path}
-                selected={location.pathname === item.path}
+                <ListItem 
+                  button 
+                  component={Link} 
+                  to={item.path}
+                  selected={location.pathname === item.path}
                   sx={{
                     mb: 1,
                     borderRadius: 2,
@@ -264,21 +264,21 @@ const Header = ({ darkMode, toggleDarkMode }) => {
                     },
                     transition: 'all 0.3s'
                   }}
-              >
+                >
                   <ListItemIcon sx={{ 
                     color: location.pathname === item.path 
                       ? theme.palette.primary.main 
                       : 'inherit'
                   }}>
-                  {item.icon}
-                </ListItemIcon>
+                    {item.icon}
+                  </ListItemIcon>
                   <ListItemText 
                     primary={item.name} 
                     primaryTypographyProps={{ 
                       fontWeight: location.pathname === item.path ? 'bold' : 'normal' 
                     }}
                   />
-              </ListItem>
+                </ListItem>
               </motion.div>
             ))}
             

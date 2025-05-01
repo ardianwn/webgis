@@ -16,8 +16,6 @@ import {
   AccordionSummary,
   Box,
   Button,
-  Card,
-  CardContent,
   Chip,
   Divider,
   FormControl,
@@ -72,7 +70,6 @@ const MapPage = () => {
   const [selectedDataset, setSelectedDataset] = useState('');
   const [datasets, setDatasets] = useState([]);
   const [geojsonData, setGeojsonData] = useState(null);
-  const [geojsonDataWithValues, setGeojsonDataWithValues] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(!isMobile);
   const [opacity, setOpacity] = useState(0.7);
   const [activeRegion, setActiveRegion] = useState(null);
@@ -127,30 +124,19 @@ const MapPage = () => {
   // State untuk menyimpan provider tile yang dipilih
   const [selectedTileProvider, setSelectedTileProvider] = useState(tileProviders[0]);
 
-  // Mendapatkan GeoJSON data Indonesia
-  useEffect(() => {
-    const fetchGeoJson = async () => {
-      try {
-        // Mengambil data GeoJSON Indonesia dari file lokal
-        const response = await fetch('./data/indonesia.geojson');
-        const data = await response.json();
-        setGeojsonData(data);
-        console.log("GeoJSON data loaded successfully");
-      } catch (error) {
-        console.error('Error fetching GeoJSON:', error);
-      }
-    };
-
-    fetchGeoJson();
-  }, []);
-
-  // Mendapatkan dataset BPS dari file CSV
+  // Mendapatkan daftar dataset
   useEffect(() => {
     const fetchDatasets = async () => {
       try {
-        const response = await fetch('./data/bps/datasets.json');
-        const data = await response.json();
-        setDatasets(data);
+        // Simulasi data dari API
+        const sampleDatasets = [
+          { id: '1', name: 'Jumlah Penduduk per Provinsi', year: '2020', indicator: 'Demografi' },
+          { id: '2', name: 'Produk Domestik Regional Bruto', year: '2019', indicator: 'Ekonomi' },
+          { id: '3', name: 'Tingkat Pengangguran Terbuka', year: '2021', indicator: 'Ketenagakerjaan' },
+          { id: '4', name: 'Indeks Pembangunan Manusia', year: '2021', indicator: 'Sosial' },
+          { id: '5', name: 'Persentase Penduduk Miskin', year: '2021', indicator: 'Kemiskinan' }
+        ];
+        setDatasets(sampleDatasets);
       } catch (error) {
         console.error('Error fetching datasets:', error);
       }
@@ -159,56 +145,43 @@ const MapPage = () => {
     fetchDatasets();
   }, []);
 
-  // Mendapatkan data saat dataset dipilih
+  // Mendapatkan GeoJSON data Indonesia
   useEffect(() => {
-    if (!selectedDataset || !geojsonData) return;
-    
-    const fetchDatasetData = async () => {
+    const fetchGeoJson = async () => {
       try {
-        // Mengambil data dari file CSV sesuai dataset yang dipilih
-        const response = await fetch(`./data/bps/${selectedDataset}_${datasets.find(d => d.id === selectedDataset)?.name.replace(/\s+/g, '_').toLowerCase()}.csv`);
-        const csvText = await response.text();
-        
-        // Parsing data CSV
-        const rows = csvText.split('\n');
-        const headers = rows[0].split(',');
-        const provinceIndex = headers.indexOf('province');
-        const valueIndex = headers.indexOf('value');
-        
-        // Membuat object untuk memetakan provinsi dengan nilainya
-        const provinceData = {};
-        
-        // Skip baris header (index 0)
-        for (let i = 1; i < rows.length; i++) {
-          if (!rows[i].trim()) continue;
-          
-          const columns = rows[i].split(',');
-          const province = columns[provinceIndex];
-          const value = parseFloat(columns[valueIndex]);
-          
-          provinceData[province] = value;
-        }
-        
-        // Mengaplikasikan data ke GeoJSON
-        const newGeojsonData = JSON.parse(JSON.stringify(geojsonData));
-        newGeojsonData.features.forEach(feature => {
-          const provinceName = feature.properties.state;
-          feature.properties.value = provinceData[provinceName] || 0;
-        });
-        
-        setGeojsonDataWithValues(newGeojsonData);
-        console.log("Dataset loaded successfully:", provinceData);
+        // Dalam implementasi sebenarnya, data ini akan diambil dari server
+        // Saat ini kita menggunakan URL publik untuk mendapatkan GeoJSON Indonesia
+        const response = await fetch('https://raw.githubusercontent.com/superpikar/indonesia-geojson/master/indonesia.geojson');
+        const data = await response.json();
+        setGeojsonData(data);
       } catch (error) {
-        console.error('Error fetching dataset data:', error);
+        console.error('Error fetching GeoJSON:', error);
       }
     };
 
-    fetchDatasetData();
-  }, [selectedDataset, geojsonData, datasets]);
+    fetchGeoJson();
+  }, []);
+
+  // Mendapatkan data statistik saat dataset dipilih
+  useEffect(() => {
+    if (!selectedDataset) return;
+
+    const fetchStatData = async () => {
+      try {
+        // Implementasi sebenarnya akan mengambil data dari server
+        console.log(`Fetching data for dataset ${selectedDataset}`);
+        // setStatData(data);
+      } catch (error) {
+        console.error('Error fetching statistical data:', error);
+      }
+    };
+
+    fetchStatData();
+  }, [selectedDataset]);
 
   // Fungsi style untuk GeoJSON
   const getStyle = (feature) => {
-    // Warna berdasarkan dataset yang dipilih
+    // Warna berdasarkan dataset yang dipilih (implementasi sederhana)
     const getColorScale = () => {
       if (!selectedDataset) return ['#3a7bd5', '#3a7bd5', '#3a7bd5', '#3a7bd5', '#3a7bd5'];
 
@@ -231,36 +204,12 @@ const MapPage = () => {
       }
     };
 
-    const getColor = (feature) => {
-      if (!selectedDataset || !feature.properties.value) return getColorScale()[0];
-      
-      const colors = getColorScale();
-      const value = feature.properties.value;
-      
-      // Mendapatkan nilai min dan max dari semua provinsi
-      let min = Infinity;
-      let max = -Infinity;
-      
-      if (geojsonDataWithValues) {
-        geojsonDataWithValues.features.forEach(f => {
-          if (f.properties.value) {
-            min = Math.min(min, f.properties.value);
-            max = Math.max(max, f.properties.value);
-          }
-        });
-      }
-      
-      // Normalisasi nilai ke range 0-1
-      const normalized = (value - min) / (max - min || 1);
-      
-      // Konversi nilai normalisasi ke indeks warna (0-4)
-      const colorIndex = Math.min(Math.floor(normalized * 5), 4);
-      
-      return colors[colorIndex];
-    };
+    const colorScale = getColorScale();
+    const random = Math.floor(Math.random() * colorScale.length);
+    const color = colorScale[random];
 
     return {
-      fillColor: getColor(feature),
+      fillColor: color,
       weight: 1,
       opacity: 1,
       color: 'white',
@@ -272,8 +221,7 @@ const MapPage = () => {
   // Fungsi saat fitur di klik
   const onEachFeature = (feature, layer) => {
     if (feature.properties) {
-      const { state: provinceName } = feature.properties;
-      const value = feature.properties.value || 0;
+      const { NAME_1 } = feature.properties;
       
       // Popup saat provinsi diklik dengan styling yang lebih baik
       const popupContent = `
@@ -288,17 +236,14 @@ const MapPage = () => {
             display: flex;
             align-items: center;
           ">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="
-              margin-right: 8px;
-              color: #3a7bd5;
-            ">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
               <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
               <circle cx="12" cy="10" r="3"></circle>
             </svg>
-            ${provinceName}
+            ${NAME_1}
           </h4>
           <div class="popup-content" style="
-            margin-bottom: 16px;
+            margin-bottom: 15px;
             font-size: 14px;
           ">
             <p style="
@@ -320,7 +265,7 @@ const MapPage = () => {
                 font-weight: bold;
                 color: #3a7bd5;
                 font-size: 16px;
-              ">${value.toLocaleString()} ${datasets.find(d => d.id === selectedDataset)?.unit || ''}</span>
+              ">${Math.floor(Math.random() * 100).toLocaleString()}</span>
             </p>
             <p style="
               margin: 6px 0;
@@ -347,6 +292,8 @@ const MapPage = () => {
             font-size: 13px;
             font-weight: 500;
             cursor: pointer;
+            width: 100%;
+            transition: all 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -397,8 +344,8 @@ const MapPage = () => {
         },
         click: (e) => {
           setActiveRegion({
-            name: provinceName,
-            value: value,
+            name: NAME_1,
+            value: Math.floor(Math.random() * 100),
             year: datasets.find(d => d.id === selectedDataset)?.year || '2021',
             dataset: datasets.find(d => d.id === selectedDataset)?.name || 'Data tidak tersedia'
           });
@@ -460,260 +407,6 @@ const MapPage = () => {
   return (
     <Box sx={{ position: 'relative', height: 'calc(100vh - 64px)', overflow: 'hidden' }}>
       
-      {/* Panel Info */}
-      <AnimatePresence>
-        {showInfoPanel && activeRegion && (
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 50 }}
-            transition={{ 
-              type: 'spring', 
-              damping: 20,
-              stiffness: 200
-            }}
-            style={{
-              position: 'absolute',
-              top: '20px',
-              right: '20px',
-              zIndex: 999,
-              maxWidth: '350px',
-              width: isMobile ? 'calc(100% - 40px)' : '350px'
-            }}
-          >
-            <Card 
-              elevation={4} 
-              className="glass-panel"
-        sx={{
-                backdropFilter: 'blur(8px)',
-                backgroundColor: theme.palette.mode === 'dark' 
-                  ? 'rgba(30, 34, 42, 0.85)' 
-                  : 'rgba(255, 255, 255, 0.9)',
-                borderRadius: 3,
-                overflow: 'hidden',
-                border: `1px solid ${theme.palette.mode === 'dark' 
-                  ? 'rgba(255, 255, 255, 0.1)' 
-                  : 'rgba(0, 0, 0, 0.05)'}`,
-                boxShadow: theme.palette.mode === 'dark'
-                  ? '0 8px 32px rgba(0, 0, 0, 0.5)'
-                  : '0 8px 32px rgba(0, 0, 0, 0.1)',
-                transition: 'all 0.3s ease'
-              }}
-            >
-              <CardContent sx={{ p: 3 }}>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1, duration: 0.3 }}
-                  >
-                    <Typography 
-                      variant="h6" 
-                      component="h3" 
-                      gutterBottom 
-                      sx={{ 
-                        fontWeight: 'bold',
-                        display: 'flex',
-                        alignItems: 'center',
-                        color: theme.palette.mode === 'dark' 
-                          ? theme.palette.primary.light 
-                          : theme.palette.primary.dark
-                      }}
-                    >
-                      <motion.div
-                        initial={{ scale: 0.8 }}
-                        animate={{ scale: 1 }}
-                        transition={{ 
-                          delay: 0.2,
-                          type: 'spring', 
-                          stiffness: 300
-                        }}
-                      >
-                        <MapIcon sx={{ mr: 1, fontSize: '1.2rem' }} />
-                      </motion.div>
-                      {activeRegion.name}
-                    </Typography>
-                  </motion.div>
-                  <motion.div
-                    whileHover={{ scale: 1.1, rotate: 90 }}
-                    whileTap={{ scale: 0.9 }}
-                  >
-                    <IconButton 
-                      size="small" 
-                      onClick={() => setShowInfoPanel(false)}
-                      sx={{
-                        backgroundColor: theme.palette.mode === 'dark' 
-                          ? 'rgba(255, 255, 255, 0.05)' 
-                          : 'rgba(0, 0, 0, 0.03)',
-                        '&:hover': {
-                          backgroundColor: theme.palette.mode === 'dark' 
-                            ? 'rgba(255, 255, 255, 0.1)' 
-                            : 'rgba(0, 0, 0, 0.06)'
-                        }
-                      }}
-                    >
-                      <ChevronRight />
-                    </IconButton>
-                  </motion.div>
-                </Box>
-                <Divider sx={{ 
-                  mb: 2,
-                  borderColor: theme.palette.mode === 'dark' 
-                    ? 'rgba(255, 255, 255, 0.1)' 
-                    : 'rgba(0, 0, 0, 0.06)'
-                }} />
-                
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.15, duration: 0.3 }}
-                >
-                  <Box mb={2.5} sx={{
-                    p: 1.5,
-                    bgcolor: theme.palette.mode === 'dark' 
-                      ? 'rgba(255, 255, 255, 0.03)' 
-                      : 'rgba(0, 0, 0, 0.02)',
-                    borderRadius: 2,
-                    border: `1px solid ${theme.palette.divider}`
-                  }}>
-                    <Typography 
-                      variant="body2" 
-                      color="text.secondary" 
-                      gutterBottom
-                      sx={{ 
-                        fontSize: '0.75rem',
-                        fontWeight: 'medium',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px'
-                      }}
-                    >
-                      Dataset
-                    </Typography>
-                    <Typography variant="body1" gutterBottom>
-                      {activeRegion.dataset}
-                    </Typography>
-                  </Box>
-                </motion.div>
-                
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2, duration: 0.3 }}
-                >
-                  <Box mb={2.5} sx={{
-                    p: 1.5,
-                    bgcolor: theme.palette.mode === 'dark' 
-                      ? 'rgba(255, 255, 255, 0.03)' 
-                      : 'rgba(0, 0, 0, 0.02)',
-                    borderRadius: 2,
-                    border: `1px solid ${theme.palette.divider}`
-                  }}>
-                    <Typography 
-                      variant="body2" 
-                      color="text.secondary" 
-                      gutterBottom
-                      sx={{ 
-                        fontSize: '0.75rem',
-                        fontWeight: 'medium',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px'
-                      }}
-                    >
-                      Nilai
-                    </Typography>
-                    <Typography 
-                      variant="h5" 
-                      sx={{ 
-                        color: theme.palette.primary.main, 
-                        fontWeight: 'bold',
-                        display: 'flex',
-                        alignItems: 'flex-end'
-                      }}
-                    >
-                      <motion.span
-                        initial={{ scale: 0.5 }}
-                        animate={{ scale: 1 }}
-                        transition={{ delay: 0.3, type: 'spring' }}
-                      >
-                        {activeRegion.value.toLocaleString()}
-                      </motion.span>
-                      <Typography variant="caption" sx={{ ml: 1, mb: 0.5, opacity: 0.7 }}>
-                        {datasets.find(d => d.id === selectedDataset)?.unit || ''}
-                      </Typography>
-                    </Typography>
-                  </Box>
-                </motion.div>
-                
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.25, duration: 0.3 }}
-                >
-                  <Box mb={2.5} sx={{
-                    p: 1.5,
-                    bgcolor: theme.palette.mode === 'dark' 
-                      ? 'rgba(255, 255, 255, 0.03)' 
-                      : 'rgba(0, 0, 0, 0.02)',
-                    borderRadius: 2,
-                    border: `1px solid ${theme.palette.divider}`
-                  }}>
-                    <Typography 
-                      variant="body2" 
-                      color="text.secondary" 
-                      gutterBottom
-                      sx={{ 
-                        fontSize: '0.75rem',
-                        fontWeight: 'medium',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px'
-                      }}
-                    >
-                      Tahun
-                    </Typography>
-                    <Chip 
-                      size="small" 
-                      label={activeRegion.year} 
-                      color="primary" 
-                      variant="outlined"
-                      sx={{
-                        fontWeight: 'bold',
-                        borderRadius: '12px'
-                      }}
-                    />
-                  </Box>
-                </motion.div>
-                
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3, duration: 0.3 }}
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                >
-                  <Button 
-                    variant="contained" 
-                    color="primary" 
-                    size="medium" 
-                    fullWidth
-                    sx={{ 
-                      mt: 1,
-                      borderRadius: '50px',
-                      textTransform: 'none',
-                      fontWeight: 'bold',
-                      py: 1,
-                      boxShadow: '0 4px 10px rgba(0, 0, 0, 0.15)'
-                    }}
-                    startIcon={<InfoOutlined />}
-                  >
-                    Lihat Detail Lengkap
-                  </Button>
-                </motion.div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Drawer Panel Kontrol */}
       <AnimatePresence>
         <motion.div
@@ -877,25 +570,25 @@ const MapPage = () => {
                         </Grid>
                       ))}
                     </Grid>
-            </AccordionDetails>
-          </Accordion>
-          
+                  </AccordionDetails>
+                </Accordion>
+                
                 <Box sx={{ mt: 2 }}>
                   <Typography variant="body2" gutterBottom sx={{ fontWeight: 500 }}>
-                Transparansi
-              </Typography>
-              <Slider
-                value={opacity}
+                    Transparansi
+                  </Typography>
+                  <Slider
+                    value={opacity}
                     onChange={handleOpacityChange}
-                min={0}
-                max={1}
-                step={0.1}
+                    min={0}
+                    max={1}
+                    step={0.1}
                     marks={[
                       { value: 0, label: '0%' },
                       { value: 0.5, label: '50%' },
                       { value: 1, label: '100%' }
                     ]}
-                valueLabelDisplay="auto"
+                    valueLabelDisplay="auto"
                     valueLabelFormat={(value) => `${value * 100}%`}
                     sx={{ mt: 2 }}
                   />
@@ -923,17 +616,17 @@ const MapPage = () => {
                     Data pada peta interaktif ini merupakan data simulasi untuk keperluan demonstrasi.
                   </Typography>
                   
-            <Button 
+                  <Button 
                     size="small"
-              variant="outlined" 
-              color="primary" 
+                    variant="outlined" 
+                    color="primary" 
                     sx={{ mt: 1, textTransform: 'none', borderRadius: '50px' }}
-            >
+                  >
                     Tentang Data
-            </Button>
+                  </Button>
                 </Paper>
-          </Box>
-        </Box>
+              </Box>
+            </Box>
           </Paper>
         </motion.div>
       </AnimatePresence>
@@ -953,14 +646,14 @@ const MapPage = () => {
           }}
         >
           <Tooltip title="Buka Panel Kontrol">
-      <IconButton
+            <IconButton
               onClick={toggleDrawer}
               size="large"
-        color="primary"
-        sx={{
+              color="primary"
+              sx={{
                 bgcolor: 'background.paper',
                 boxShadow: 2,
-          '&:hover': {
+                '&:hover': {
                   bgcolor: 'background.paper',
                   transform: 'scale(1.1)'
                 },
@@ -996,7 +689,7 @@ const MapPage = () => {
                 </Typography>
                 <IconButton size="small" onClick={() => setLegendOpen(false)}>
                   <ChevronRight fontSize="small" />
-      </IconButton>
+                </IconButton>
               </Box>
               <Divider sx={{ mb: 1.5 }} />
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
@@ -1045,30 +738,30 @@ const MapPage = () => {
           ml: drawerOpen ? { xs: '280px', md: '320px' } : 0
         }}
       >
-            <MapContainer
+        <MapContainer
           center={[-2.5, 118]}
-              zoom={5}
-              style={{ height: '100%', width: '100%' }}
-              zoomControl={false}
-              ref={mapRef}
+          zoom={5}
+          style={{ height: '100%', width: '100%' }}
+          zoomControl={false}
+          ref={mapRef}
           className="map-container"
-            >
-              <TileLayer
+        >
+          <TileLayer
             url={selectedTileProvider.url}
-                attribution={selectedTileProvider.attribution}
-              />
-              <ZoomControl position="bottomright" />
+            attribution={selectedTileProvider.attribution}
+          />
+          <ZoomControl position="bottomright" />
           <ChangeMapView tileProvider={selectedTileProvider} />
-              
-              {geojsonData && (
-                <GeoJSON
-                  data={geojsonData}
-                  style={getStyle}
-                  onEachFeature={onEachFeature}
-                />
-              )}
-            </MapContainer>
-          </Box>
+          
+          {geojsonData && (
+            <GeoJSON
+              data={geojsonData}
+              style={getStyle}
+              onEachFeature={onEachFeature}
+            />
+          )}
+        </MapContainer>
+      </Box>
       
       {/* Watermark */}
       <Box

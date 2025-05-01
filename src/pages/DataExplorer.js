@@ -1,50 +1,50 @@
 import {
-    BarChart as BarChartIcon,
-    DataArray,
-    FileDownload,
-    FilterAlt,
-    PieChart as PieChartIcon,
-    Refresh,
-    Search,
-    Timeline,
-    TrendingUp,
-    ViewList,
-    ViewModule
+  BarChart as BarChartIcon,
+  DataArray,
+  FileDownload,
+  FilterAlt,
+  PieChart as PieChartIcon,
+  Refresh,
+  Search,
+  Timeline,
+  TrendingUp,
+  ViewList,
+  ViewModule
 } from '@mui/icons-material';
 import {
-    Avatar,
-    Box,
-    Button,
-    Card,
-    CardContent,
-    Chip,
-    CircularProgress,
-    Container,
-    Divider,
-    FormControl,
-    Grid,
-    IconButton,
-    InputAdornment,
-    InputLabel,
-    MenuItem,
-    Paper,
-    Select,
-    Tab,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TablePagination,
-    TableRow,
-    Tabs,
-    TextField,
-    ToggleButton,
-    ToggleButtonGroup,
-    Tooltip,
-    Typography,
-    useMediaQuery,
-    useTheme
+  Avatar,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  CircularProgress,
+  Container,
+  Divider,
+  FormControl,
+  Grid,
+  IconButton,
+  InputAdornment,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TablePagination,
+  TableRow,
+  Tabs,
+  TextField,
+  ToggleButton,
+  ToggleButtonGroup,
+  Tooltip,
+  Typography,
+  useMediaQuery,
+  useTheme
 } from '@mui/material';
 import { AnimatePresence, motion } from 'framer-motion';
 import React, { useEffect, useRef, useState } from 'react';
@@ -65,6 +65,21 @@ ChartJS.register(
   Legend
 );
 
+// Simulasi data provinsi
+const provinces = [
+  "Aceh", "Sumatra Utara", "Sumatra Barat", "Riau", "Jambi", "Sumatra Selatan", 
+  "Bengkulu", "Lampung", "Kepulauan Bangka Belitung", "Kepulauan Riau", 
+  "DKI Jakarta", "Jawa Barat", "Jawa Tengah", "DI Yogyakarta", "Jawa Timur", 
+  "Banten", "Bali", "Nusa Tenggara Barat", "Nusa Tenggara Timur", 
+  "Kalimantan Barat", "Kalimantan Tengah", "Kalimantan Selatan", "Kalimantan Timur", 
+  "Kalimantan Utara", "Sulawesi Utara", "Sulawesi Tengah", "Sulawesi Selatan", 
+  "Sulawesi Tenggara", "Gorontalo", "Sulawesi Barat", "Maluku", "Maluku Utara", 
+  "Papua Barat", "Papua"
+];
+
+// Simulasi data historis untuk tren waktu
+const historicalYears = ['2015', '2016', '2017', '2018', '2019', '2020', '2021'];
+
 const DataExplorer = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -72,7 +87,6 @@ const DataExplorer = () => {
   const [datasets, setDatasets] = useState([]);
   const [data, setData] = useState([]);
   const [historyData, setHistoryData] = useState([]);
-  const [provinces, setProvinces] = useState([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [tabValue, setTabValue] = useState(0);
@@ -86,9 +100,15 @@ const DataExplorer = () => {
   useEffect(() => {
     const fetchDatasets = async () => {
       try {
-        const response = await fetch('/src/data/bps/datasets.json');
-        const data = await response.json();
-        setDatasets(data);
+        // Simulasi data dari API
+        const sampleDatasets = [
+          { id: '1', name: 'Jumlah Penduduk per Provinsi', year: '2020', indicator: 'Demografi', unit: 'Jiwa' },
+          { id: '2', name: 'Produk Domestik Regional Bruto', year: '2019', indicator: 'Ekonomi', unit: 'Miliar Rupiah' },
+          { id: '3', name: 'Tingkat Pengangguran Terbuka', year: '2021', indicator: 'Ketenagakerjaan', unit: 'Persen' },
+          { id: '4', name: 'Indeks Pembangunan Manusia', year: '2021', indicator: 'Sosial', unit: 'Indeks' },
+          { id: '5', name: 'Persentase Penduduk Miskin', year: '2021', indicator: 'Kemiskinan', unit: 'Persen' }
+        ];
+        setDatasets(sampleDatasets);
       } catch (error) {
         console.error('Error fetching datasets:', error);
       }
@@ -97,101 +117,44 @@ const DataExplorer = () => {
     fetchDatasets();
   }, []);
 
-  // Mendapatkan daftar provinsi dari GeoJSON
-  useEffect(() => {
-    const fetchProvinces = async () => {
-      try {
-        const response = await fetch('./data/indonesia.geojson');
-        const data = await response.json();
-        const provinceList = data.features.map(feature => feature.properties.state);
-        setProvinces(provinceList);
-      } catch (error) {
-        console.error('Error fetching provinces:', error);
-      }
-    };
-
-    fetchProvinces();
-  }, []);
-
   // Mendapatkan data saat dataset dipilih
   useEffect(() => {
-    if (!selectedDataset || !provinces.length) return;
+    if (!selectedDataset) return;
 
-    const fetchDatasetData = async () => {
+    const generateData = async () => {
       setIsLoading(true);
       
-      try {
-        // Mengambil data dari file CSV sesuai dataset yang dipilih
-        const response = await fetch(`./data/bps/${selectedDataset}_${datasets.find(d => d.id === selectedDataset)?.name.replace(/\s+/g, '_').toLowerCase()}.csv`);
-        const csvText = await response.text();
-        
-        // Parsing data CSV
-        const rows = csvText.split('\n');
-        const headers = rows[0].split(',');
-        const provinceIndex = headers.indexOf('province');
-        const valueIndex = headers.indexOf('value');
-        const yearIndex = headers.indexOf('year');
-        
-        // Membuat array data dari CSV
-        const csvData = [];
-        
-        // Skip baris header (index 0)
-        for (let i = 1; i < rows.length; i++) {
-          if (!rows[i].trim()) continue;
-          
-          const columns = rows[i].split(',');
-          const province = columns[provinceIndex];
-          const value = parseFloat(columns[valueIndex]);
-          const year = columns[yearIndex];
-          
-          csvData.push({
+      // Simulasi loading untuk pengalaman pengguna yang lebih realistis
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      // Simulasi data untuk dataset yang dipilih
+      const newData = provinces.map((province) => ({
         province,
-            value,
+        value: parseFloat((Math.random() * 100).toFixed(2)),
+        year: datasets.find(d => d.id === selectedDataset)?.year || '2021',
+        trend: Math.random() > 0.5 ? 'up' : 'down',
+        change: parseFloat((Math.random() * 10).toFixed(2)),
+        rank: Math.floor(Math.random() * 34) + 1
+      }));
+      
+      // Generate historical data for time trends
+      const historicalData = provinces.slice(0, 5).map(province => {
+        return {
+          province,
+          values: historicalYears.map(year => ({
             year,
-            // Generate nilai tambahan
-            trend: Math.random() > 0.5 ? 'up' : 'down',
-            change: parseFloat((Math.random() * 10).toFixed(2)),
-            rank: i
-          });
-        }
-        
-        // Sort data berdasarkan nilai untuk mendapatkan ranking yang benar
-        csvData.sort((a, b) => b.value - a.value);
-        csvData.forEach((item, index) => {
-          item.rank = index + 1;
-        });
-        
-        // Generate data historis (simulasi untuk contoh tren waktu)
-        const selectedYear = datasets.find(d => d.id === selectedDataset)?.year;
-        const historicalYears = Array.from({ length: 7 }, (_, i) => (parseInt(selectedYear) - 6 + i).toString());
-        
-        // Pilih 5 provinsi dengan nilai tertinggi untuk data historis
-        const topProvinces = csvData.slice(0, 5);
-        
-        const historicalData = topProvinces.map(provinceData => {
-          return {
-            province: provinceData.province,
-            values: historicalYears.map(year => ({
-              year,
-              value: year === selectedYear ? 
-                provinceData.value : 
-                // Simulasi nilai historis dengan variasi random dari nilai saat ini
-                parseFloat((provinceData.value * (0.7 + Math.random() * 0.6)).toFixed(2))
-            }))
-          };
-        });
-        
-        setData(csvData);
-        setHistoryData(historicalData);
-      } catch (error) {
-        console.error('Error fetching dataset data:', error);
-      } finally {
-        setIsLoading(false);
-      }
+            value: parseFloat((Math.random() * 100).toFixed(2))
+          }))
+        };
+      });
+      
+      setData(newData);
+      setHistoryData(historicalData);
+      setIsLoading(false);
     };
 
-    fetchDatasetData();
-  }, [selectedDataset, datasets, provinces]);
+    generateData();
+  }, [selectedDataset, datasets]);
 
   // Filter data berdasarkan pencarian
   const filteredData = data.filter(item => 
@@ -264,54 +227,32 @@ const DataExplorer = () => {
     if (!selectedDataset) return;
     
     setIsLoading(true);
+    await new Promise(resolve => setTimeout(resolve, 800));
     
-    try {
-      // Fetch data again
-      const response = await fetch(`./data/bps/${selectedDataset}_${datasets.find(d => d.id === selectedDataset)?.name.replace(/\s+/g, '_').toLowerCase()}.csv`);
-      const csvText = await response.text();
-      
-      // Parsing data CSV
-      const rows = csvText.split('\n');
-      const headers = rows[0].split(',');
-      const provinceIndex = headers.indexOf('province');
-      const valueIndex = headers.indexOf('value');
-      const yearIndex = headers.indexOf('year');
-      
-      // Membuat array data dari CSV
-      const csvData = [];
-      
-      // Skip baris header (index 0)
-      for (let i = 1; i < rows.length; i++) {
-        if (!rows[i].trim()) continue;
-        
-        const columns = rows[i].split(',');
-        const province = columns[provinceIndex];
-        const value = parseFloat(columns[valueIndex]);
-        const year = columns[yearIndex];
-        
-        csvData.push({
-          province,
-          value,
+    // Generate new data
+    const newData = provinces.map((province) => ({
+      province,
+      value: parseFloat((Math.random() * 100).toFixed(2)),
+      year: datasets.find(d => d.id === selectedDataset)?.year || '2021',
+      trend: Math.random() > 0.5 ? 'up' : 'down',
+      change: parseFloat((Math.random() * 10).toFixed(2)),
+      rank: Math.floor(Math.random() * 34) + 1
+    }));
+    
+    // Update historical data too
+    const historicalData = provinces.slice(0, 5).map(province => {
+      return {
+        province,
+        values: historicalYears.map(year => ({
           year,
-          // Generate nilai tambahan
-          trend: Math.random() > 0.5 ? 'up' : 'down',
-          change: parseFloat((Math.random() * 10).toFixed(2)),
-          rank: i
-        });
-      }
-      
-      // Sort data berdasarkan nilai untuk mendapatkan ranking yang benar
-      csvData.sort((a, b) => b.value - a.value);
-      csvData.forEach((item, index) => {
-        item.rank = index + 1;
-      });
-      
-      setData(csvData);
-    } catch (error) {
-      console.error('Error refreshing data:', error);
-    } finally {
-      setIsLoading(false);
-    }
+          value: parseFloat((Math.random() * 100).toFixed(2))
+        }))
+      };
+    });
+    
+    setData(newData);
+    setHistoryData(historicalData);
+    setIsLoading(false);
   };
   
   // Handler untuk download data
@@ -322,10 +263,10 @@ const DataExplorer = () => {
     
     // Create CSV content
     let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Provinsi,Nilai,Tahun,Trend,Perubahan,Peringkat\n";
+    csvContent += "Provinsi,Nilai,Trend,Perubahan,Peringkat\n";
     
     sortedData.forEach(item => {
-      csvContent += `${item.province},${item.value},${item.year},${item.trend === 'up' ? 'Naik' : 'Turun'},${item.change},${item.rank}\n`;
+      csvContent += `${item.province},${item.value},${item.trend === 'up' ? 'Naik' : 'Turun'},${item.change},${item.rank}\n`;
     });
     
     // Create download link
@@ -533,7 +474,7 @@ const DataExplorer = () => {
     
     // Line chart config for time trends
     const timeChartData = {
-      labels: historyData.length > 0 ? historyData[0].values.map(v => v.year) : [],
+      labels: historicalYears,
       datasets: historyData.map((item, index) => ({
         label: item.province,
         data: item.values.map(v => v.value),
