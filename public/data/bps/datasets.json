@@ -1,0 +1,37 @@
+[
+  {
+    "id": "1",
+    "name": "Jumlah Penduduk per Provinsi",
+    "year": "2020",
+    "indicator": "Demografi",
+    "unit": "Juta Jiwa"
+  },
+  {
+    "id": "2",
+    "name": "Produk Domestik Regional Bruto",
+    "year": "2019",
+    "indicator": "Ekonomi",
+    "unit": "Triliun Rupiah"
+  },
+  {
+    "id": "3",
+    "name": "Tingkat Pengangguran Terbuka",
+    "year": "2021",
+    "indicator": "Ketenagakerjaan",
+    "unit": "Persen"
+  },
+  {
+    "id": "4",
+    "name": "Indeks Pembangunan Manusia",
+    "year": "2021",
+    "indicator": "Sosial",
+    "unit": "Indeks"
+  },
+  {
+    "id": "5",
+    "name": "Persentase Penduduk Miskin",
+    "year": "2021",
+    "indicator": "Kemiskinan",
+    "unit": "Persen"
+  }
+]
